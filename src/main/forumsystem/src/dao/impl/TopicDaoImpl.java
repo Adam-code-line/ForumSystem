@@ -549,6 +549,18 @@ public class TopicDaoImpl extends BaseDao implements TopicDao {
         return getMultipleTopics(sql, topicId, topicId, limit);
     }
 
+    @Override
+    public List<Topic> getTopicsByStatus(int forumId, Topic.TopicStatus status) {
+        String sql;
+        if (forumId == 0) {
+            sql = "SELECT * FROM topics WHERE status = ? ORDER BY create_time DESC";
+            return getMultipleTopics(sql, status.getValue());
+        } else {
+            sql = "SELECT * FROM topics WHERE forum_id = ? AND status = ? ORDER BY create_time DESC";
+            return getMultipleTopics(sql, forumId, status.getValue());
+        }
+    }
+
     // 私有辅助方法：获取单个主题
     private Topic getSingleTopic(String sql, Object... params) {
         try {

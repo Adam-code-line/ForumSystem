@@ -103,17 +103,17 @@ public interface ForumDao {
     boolean changeForumStatus(int forumId, Forum.ForumStatus status);
     
     /**
-     * 设置版块版主
-     * @param forumId 版块ID
+     * 设置板块版主
+     * @param forumId 板块ID
      * @param moderatorId 版主ID
      * @return 是否设置成功
      */
     boolean setForumModerator(int forumId, int moderatorId);
-    
+
     /**
-     * 更新版块主题计数
-     * @param forumId 版块ID
-     * @param increment 增减数量（正数增加，负数减少）
+     * 更新板块主题数量
+     * @param forumId 板块ID
+     * @param increment 增量（可为负数）
      * @return 是否更新成功
      */
     boolean updateTopicCount(int forumId, int increment);

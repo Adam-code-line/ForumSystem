@@ -4,6 +4,8 @@ import main.forumsystem.src.dao.BaseDao;
 import main.forumsystem.src.dao.UserDao;
 import main.forumsystem.src.entity.User;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -14,7 +16,7 @@ import java.util.List;
 /**
  * 用户数据访问实现类
  */
-public class UserDaoImpl extends BaseDao implements UserDao {
+public class UserDaoImpl implements UserDao {
 
     @Override
     public boolean addUser(User user) {
@@ -24,42 +26,59 @@ public class UserDaoImpl extends BaseDao implements UserDao {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
         
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
             // 如果注册时间为空，设置为当前时间
             if (user.getRegisterTime() == null) {
                 user.setRegisterTime(LocalDateTime.now());
             }
             
-            int result = executeUpdate(sql,
-                user.getUsername(),
-                user.getPassword(),
-                user.getEmail(),
-                user.getNickName(),
-                user.getAvatar(),
-                user.getRole().getValue(),
-                user.getStatus().getValue(),
-                Timestamp.valueOf(user.getRegisterTime()),
-                user.getLastLogin() != null ? Timestamp.valueOf(user.getLastLogin()) : null,
-                user.getPostCount(),
-                user.getReputation()
-            );
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
             
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getPassword());
+            pstmt.setString(3, user.getEmail());
+            pstmt.setString(4, user.getNickName());
+            pstmt.setString(5, user.getAvatar());
+            pstmt.setString(6, user.getRole().getValue());
+            pstmt.setString(7, user.getStatus().getValue());
+            pstmt.setTimestamp(8, Timestamp.valueOf(user.getRegisterTime()));
+            pstmt.setTimestamp(9, user.getLastLogin() != null ? Timestamp.valueOf(user.getLastLogin()) : null);
+            pstmt.setInt(10, user.getPostCount());
+            pstmt.setInt(11, user.getReputation());
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+            
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean deleteUser(int userId) {
         String sql = "DELETE FROM users WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
@@ -71,23 +90,31 @@ public class UserDaoImpl extends BaseDao implements UserDao {
             WHERE user_id = ?
             """;
         
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql,
-                user.getUsername(),
-                user.getEmail(),
-                user.getNickName(),
-                user.getAvatar(),
-                user.getRole().getValue(),
-                user.getStatus().getValue(),
-                user.getPostCount(),
-                user.getReputation(),
-                user.getUserId()
-            );
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
             
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getEmail());
+            pstmt.setString(3, user.getNickName());
+            pstmt.setString(4, user.getAvatar());
+            pstmt.setString(5, user.getRole().getValue());
+            pstmt.setString(6, user.getStatus().getValue());
+            pstmt.setInt(7, user.getPostCount());
+            pstmt.setInt(8, user.getReputation());
+            pstmt.setInt(9, user.getUserId());
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+            
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
@@ -111,20 +138,30 @@ public class UserDaoImpl extends BaseDao implements UserDao {
 
     @Override
     public User validateLogin(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username = ? AND password = ? AND status = 'active'";
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         return getSingleUser(sql, username, password);
     }
 
     @Override
     public boolean usernameExists(String username) {
         String sql = "SELECT COUNT(*) as count FROM users WHERE username = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
         try {
-            ResultSet rs = executeQuery(sql, username);
-            if (rs != null && rs.next()) {
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, username);
+            
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
                 return rs.getInt("count") > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            BaseDao.close(conn, pstmt, rs);
         }
         return false;
     }
@@ -132,13 +169,23 @@ public class UserDaoImpl extends BaseDao implements UserDao {
     @Override
     public boolean emailExists(String email) {
         String sql = "SELECT COUNT(*) as count FROM users WHERE email = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
         try {
-            ResultSet rs = executeQuery(sql, email);
-            if (rs != null && rs.next()) {
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, email);
+            
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
                 return rs.getInt("count") > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            BaseDao.close(conn, pstmt, rs);
         }
         return false;
     }
@@ -171,72 +218,132 @@ public class UserDaoImpl extends BaseDao implements UserDao {
     @Override
     public boolean updateLastLogin(int userId) {
         String sql = "UPDATE users SET last_login = ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, Timestamp.valueOf(LocalDateTime.now()), userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean updatePostCount(int userId, int increment) {
         String sql = "UPDATE users SET post_count = post_count + ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, increment, userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, increment);
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean updateReputation(int userId, int increment) {
         String sql = "UPDATE users SET reputation = reputation + ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, increment, userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, increment);
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean changePassword(int userId, String newPassword) {
         String sql = "UPDATE users SET password = ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, newPassword, userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, newPassword);
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean changeUserStatus(int userId, User.UserStatus status) {
         String sql = "UPDATE users SET status = ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, status.getValue(), userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, status.getValue());
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     @Override
     public boolean changeUserRole(int userId, User.UserRole role) {
         String sql = "UPDATE users SET role = ? WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            int result = executeUpdate(sql, role.getValue(), userId);
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, role.getValue());
+            pstmt.setInt(2, userId);
+            
+            int result = pstmt.executeUpdate();
             return result > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
@@ -250,43 +357,19 @@ public class UserDaoImpl extends BaseDao implements UserDao {
     @Override
     public int getUserCount() {
         String sql = "SELECT COUNT(*) as count FROM users";
-        try {
-            ResultSet rs = executeQuery(sql);
-            if (rs != null && rs.next()) {
-                return rs.getInt("count");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
+        return getCount(sql);
     }
 
     @Override
     public int getActiveUserCount() {
         String sql = "SELECT COUNT(*) as count FROM users WHERE status = 'active'";
-        try {
-            ResultSet rs = executeQuery(sql);
-            if (rs != null && rs.next()) {
-                return rs.getInt("count");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
+        return getCount(sql);
     }
 
     @Override
     public int getTodayRegisterCount() {
         String sql = "SELECT COUNT(*) as count FROM users WHERE DATE(register_time) = CURDATE()";
-        try {
-            ResultSet rs = executeQuery(sql);
-            if (rs != null && rs.next()) {
-                return rs.getInt("count");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
+        return getCount(sql);
     }
 
     @Override
@@ -304,27 +387,48 @@ public class UserDaoImpl extends BaseDao implements UserDao {
         }
         sql.append(")");
 
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
         try {
-            Object[] params = new Object[userIds.length];
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql.toString());
+            
             for (int i = 0; i < userIds.length; i++) {
-                params[i] = userIds[i];
+                pstmt.setInt(i + 1, userIds[i]);
             }
-            return executeUpdate(sql.toString(), params);
-        } catch (Exception e) {
+            
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
             return 0;
+        } finally {
+            BaseDao.close(conn, pstmt, null);
         }
     }
 
     // 私有辅助方法：获取单个用户
     private User getSingleUser(String sql, Object... params) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
         try {
-            ResultSet rs = executeQuery(sql, params);
-            if (rs != null && rs.next()) {
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            
+            for (int i = 0; i < params.length; i++) {
+                pstmt.setObject(i + 1, params[i]);
+            }
+            
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
                 return mapResultSetToUser(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            BaseDao.close(conn, pstmt, rs);
         }
         return null;
     }
@@ -332,15 +436,54 @@ public class UserDaoImpl extends BaseDao implements UserDao {
     // 私有辅助方法：获取多个用户
     private List<User> getMultipleUsers(String sql, Object... params) {
         List<User> users = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
         try {
-            ResultSet rs = executeQuery(sql, params);
-            while (rs != null && rs.next()) {
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            
+            for (int i = 0; i < params.length; i++) {
+                pstmt.setObject(i + 1, params[i]);
+            }
+            
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
                 users.add(mapResultSetToUser(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            BaseDao.close(conn, pstmt, rs);
         }
         return users;
+    }
+
+    // 私有辅助方法：获取数量
+    private int getCount(String sql, Object... params) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = BaseDao.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            
+            for (int i = 0; i < params.length; i++) {
+                pstmt.setObject(i + 1, params[i]);
+            }
+            
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("count");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            BaseDao.close(conn, pstmt, rs);
+        }
+        return 0;
     }
 
     // 私有辅助方法：将ResultSet映射为User对象

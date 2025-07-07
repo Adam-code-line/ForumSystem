@@ -106,9 +106,9 @@ public interface TopicDao {
     boolean incrementViewCount(int topicId);
     
     /**
-     * 更新主题回复计数
+     * 更新主题回复数量
      * @param topicId 主题ID
-     * @param increment 增减数量（正数增加，负数减少）
+     * @param increment 增量（可为负数）
      * @return 是否更新成功
      */
     boolean updateReplyCount(int topicId, int increment);
@@ -122,36 +122,44 @@ public interface TopicDao {
     boolean updateLastReplyInfo(int topicId, int lastReplyUserId);
     
     /**
-     * 置顶/取消置顶主题
-     * @param topicId 主题ID
-     * @param isPinned 是否置顶
-     * @return 是否操作成功
-     */
-    boolean pinTopic(int topicId, boolean isPinned);
-    
-    /**
      * 锁定/解锁主题
      * @param topicId 主题ID
-     * @param isLocked 是否锁定
+     * @param locked 是否锁定
      * @return 是否操作成功
      */
-    boolean lockTopic(int topicId, boolean isLocked);
-    
+    boolean lockTopic(int topicId, boolean locked);
+
     /**
-     * 修改主题状态
+     * 置顶/取消置顶主题
+     * @param topicId 主题ID
+     * @param pinned 是否置顶
+     * @return 是否操作成功
+     */
+    boolean pinTopic(int topicId, boolean pinned);
+
+    /**
+     * 更新主题状态
      * @param topicId 主题ID
      * @param status 新状态
-     * @return 是否修改成功
+     * @return 是否更新成功
      */
     boolean changeTopicStatus(int topicId, Topic.TopicStatus status);
-    
+
     /**
-     * 移动主题到其他版块
+     * 移动主题到其他板块
      * @param topicId 主题ID
-     * @param newForumId 新版块ID
+     * @param targetForumId 目标板块ID
      * @return 是否移动成功
      */
-    boolean moveTopic(int topicId, int newForumId);
+    boolean moveTopic(int topicId, int targetForumId);
+    
+    /**
+     * 根据状态获取主题列表
+     * @param forumId 板块ID
+     * @param status 主题状态
+     * @return 主题列表
+     */
+    List<Topic> getTopicsByStatus(int forumId, Topic.TopicStatus status);
     
     /**
      * 获取热门主题（按浏览量排序）

@@ -160,7 +160,7 @@ public class ForumDaoImpl extends BaseDao implements ForumDao {
 
     @Override
     public List<Forum> getForumsByModerator(int moderatorId) {
-        String sql = "SELECT * FROM forums WHERE moderator_id = ? ORDER BY sort_order ASC";
+        String sql = "SELECT * FROM forums WHERE moderator_id = ? AND status = 'active'";
         return getMultipleForums(sql, moderatorId);
     }
 
@@ -197,7 +197,7 @@ public class ForumDaoImpl extends BaseDao implements ForumDao {
     public boolean setForumModerator(int forumId, int moderatorId) {
         String sql = "UPDATE forums SET moderator_id = ? WHERE forum_id = ?";
         try {
-            int result = executeUpdate(sql, moderatorId > 0 ? moderatorId : null, forumId);
+            int result = executeUpdate(sql, moderatorId, forumId);
             return result > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -207,7 +207,7 @@ public class ForumDaoImpl extends BaseDao implements ForumDao {
 
     @Override
     public boolean updateTopicCount(int forumId, int increment) {
-        String sql = "UPDATE forums SET topic_count = GREATEST(0, topic_count + ?) WHERE forum_id = ?";
+        String sql = "UPDATE forums SET topic_count = topic_count + ? WHERE forum_id = ?";
         try {
             int result = executeUpdate(sql, increment, forumId);
             return result > 0;
