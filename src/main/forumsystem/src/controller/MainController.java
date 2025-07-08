@@ -5,6 +5,7 @@ import main.forumsystem.src.service.AdminService;
 import main.forumsystem.src.service.UserService;
 import main.forumsystem.src.service.LoginService;
 import main.forumsystem.src.service.ModeratorService;
+import main.forumsystem.src.service.UserBlockService;
 import main.forumsystem.src.service.impl.*;
 import main.forumsystem.src.entity.*;
 import main.forumsystem.src.controller.menu.*;
@@ -28,6 +29,7 @@ public class MainController {
     private final UserService userService;
     private final LoginService loginService;
     private final ModeratorService moderatorService;
+    private final UserBlockService userBlockService;
     
     // 功能模块控制器
     private final LoginMenuController loginMenuController;
@@ -54,6 +56,7 @@ public class MainController {
         this.userService = new UserServiceImpl();
         this.loginService = new LoginServiceImpl();
         this.moderatorService = new ModeratorServiceImpl();
+        this.userBlockService = new UserBlockServiceImpl();
         
         this.scanner = new Scanner(System.in);
         this.currentUser = null;

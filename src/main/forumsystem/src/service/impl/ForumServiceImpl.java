@@ -16,6 +16,8 @@ import main.forumsystem.src.entity.Reply;
 import main.forumsystem.src.factory.UserFactory;
 import main.forumsystem.src.factory.UserOperationFactory;
 import main.forumsystem.src.factory.impl.UserFactoryImpl;
+import main.forumsystem.src.service.UserBlockService;
+import main.forumsystem.src.service.impl.UserBlockServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +35,7 @@ public class ForumServiceImpl implements ForumService {
     private final TopicDao topicDao;
     private final ReplyDao replyDao;
     private final UserFactory userFactory;
+    private final UserBlockService userBlockService;
     
     public ForumServiceImpl() {
         this.userDao = new UserDaoImpl();
@@ -40,6 +43,7 @@ public class ForumServiceImpl implements ForumService {
         this.topicDao = new TopicDaoImpl();
         this.replyDao = new ReplyDaoImpl();
         this.userFactory = new UserFactoryImpl();
+        this.userBlockService = new UserBlockServiceImpl();
     }
     
     // ==================== 板块管理 ====================
@@ -140,6 +144,11 @@ public class ForumServiceImpl implements ForumService {
             User user = userDao.getUserById(userId);
             if (user == null) {
                 return new ForumResult(false, "用户不存在");
+            }
+            
+            // 检查是否被拉黑
+            if (!userBlockService.canUserPostInForum(userId, forumId)) {
+                return new ForumResult(false, "您被该板块版主拉黑，无法发表主题");
             }
             
             // 获取用户操作工厂
@@ -277,6 +286,11 @@ public class ForumServiceImpl implements ForumService {
             User user = userDao.getUserById(userId);
             if (user == null) {
                 return new ForumResult(false, "用户不存在");
+            }
+            
+            // 检查是否被拉黑
+            if (!userBlockService.canUserReplyToTopic(userId, topicId)) {
+                return new ForumResult(false, "您被主题作者或板块版主拉黑，无法回复");
             }
             
             // 获取用户操作工厂

@@ -13,11 +13,13 @@ public class UserMenuController {
     private final UserService userService;
     private final AuthController authController;
     private final Scanner scanner;
+    private final UserBlockMenuController userBlockMenuController;
     
     public UserMenuController(UserService userService, AuthController authController, Scanner scanner) {
         this.userService = userService;
         this.authController = authController;
         this.scanner = scanner;
+        this.userBlockMenuController = new UserBlockMenuController(userService, scanner);
     }
     
     /**
@@ -28,30 +30,39 @@ public class UserMenuController {
             System.out.println("\n=== 个人中心 ===");
             System.out.println("用户名: " + currentUser.getUsername());
             System.out.println("昵称: " + (currentUser.getNickName() != null ? currentUser.getNickName() : "未设置"));
-            System.out.println("邮箱: " + currentUser.getEmail());
             System.out.println("角色: " + getUserRoleText(currentUser));
-            System.out.println("注册时间: " + currentUser.getRegisterTime());
-            System.out.println("最后登录: " + currentUser.getLastLogin());
-            System.out.println("声誉值: " + currentUser.getReputation());
             System.out.println("发帖数: " + currentUser.getPostCount());
+            System.out.println("声誉: " + currentUser.getReputation());
             
             System.out.println("\n操作选项:");
-            System.out.println("1. 修改昵称");
-            System.out.println("2. 修改邮箱");
-            System.out.println("3. 查看个人统计");
+            System.out.println("1. 查看个人信息");
+            System.out.println("2. 修改昵称");
+            System.out.println("3. 修改密码");
+            System.out.println("4. 查看我的主题");
+            System.out.println("5. 查看我的回复");
+            System.out.println("6. 拉黑管理");  // 新增菜单项
             System.out.println("0. 返回主菜单");
             System.out.print("请选择操作: ");
             
             int choice = getIntInput();
             switch (choice) {
                 case 1:
-                    updateNickname(currentUser);
+                    viewPersonalInfo(currentUser);
                     break;
                 case 2:
-                    updateEmail(currentUser);
+                    updateNickName(currentUser);
                     break;
                 case 3:
-                    showPersonalStatistics(currentUser);
+                    changePassword(currentUser);
+                    break;
+                case 4:
+                    viewMyTopics(currentUser);
+                    break;
+                case 5:
+                    viewMyReplies(currentUser);
+                    break;
+                case 6:
+                    userBlockMenuController.showBlockManagement(currentUser);  // 调用拉黑管理
                     break;
                 case 0:
                     return;
@@ -64,7 +75,7 @@ public class UserMenuController {
     /**
      * 修改昵称
      */
-    private void updateNickname(User currentUser) {
+    private void updateNickName(User currentUser) {
         System.out.println("\n=== 修改昵称 ===");
         System.out.println("当前昵称: " + (currentUser.getNickName() != null ? currentUser.getNickName() : "未设置"));
         System.out.print("请输入新昵称: ");
@@ -82,67 +93,6 @@ public class UserMenuController {
         } else {
             System.out.println("修改失败: " + result.getMessage());
         }
-    }
-    
-    /**
-     * 修改邮箱
-     */
-    private void updateEmail(User currentUser) {
-        System.out.println("\n=== 修改邮箱 ===");
-        System.out.println("当前邮箱: " + currentUser.getEmail());
-        System.out.print("请输入新邮箱: ");
-        String newEmail = scanner.nextLine();
-        
-        if (newEmail.trim().isEmpty()) {
-            System.out.println("邮箱不能为空！");
-            return;
-        }
-        
-        // 简单的邮箱格式验证
-        if (!newEmail.contains("@") || !newEmail.contains(".")) {
-            System.out.println("邮箱格式不正确！");
-            return;
-        }
-        
-        // 检查邮箱是否已存在
-        if (userService.emailExists(newEmail) && !newEmail.equals(currentUser.getEmail())) {
-            System.out.println("该邮箱已被其他用户使用！");
-            return;
-        }
-        
-        // 创建更新后的用户对象
-        User updatedUser = createUpdatedUser(currentUser);
-        updatedUser.setEmail(newEmail);
-        
-        UserService.UserResult result = userService.updateUserProfile(updatedUser);
-        if (result.isSuccess()) {
-            currentUser.setEmail(newEmail);
-            System.out.println("邮箱修改成功！");
-        } else {
-            System.out.println("修改失败: " + result.getMessage());
-        }
-    }
-    
-    /**
-     * 显示个人统计
-     */
-    private void showPersonalStatistics(User currentUser) {
-        System.out.println("\n=== 个人统计 ===");
-        System.out.println("账户信息:");
-        System.out.println("  用户ID: " + currentUser.getUserId());
-        System.out.println("  账户状态: " + getStatusText(currentUser.getStatus()));
-        System.out.println("  权限等级: " + getUserRoleText(currentUser));
-        
-        System.out.println("\n活跃度统计:");
-        System.out.println("  总发帖数: " + currentUser.getPostCount());
-        System.out.println("  声誉积分: " + currentUser.getReputation());
-        
-        System.out.println("\n时间信息:");
-        System.out.println("  注册时间: " + currentUser.getRegisterTime());
-        System.out.println("  最后登录: " + currentUser.getLastLogin());
-        
-        System.out.println("\n按任意键返回...");
-        scanner.nextLine();
     }
     
     /**
@@ -192,19 +142,11 @@ public class UserMenuController {
         return updatedUser;
     }
     
-    private String getUserRoleText(User user) {
-        return switch (user.getRole()) {
+    private String getUserRoleText(User currentUser) {
+        return switch (currentUser.getRole()) {
             case USER -> "普通用户";
             case MODERATOR -> "版主";
             case ADMIN -> "管理员";
-        };
-    }
-    
-    private String getStatusText(User.UserStatus status) {
-        return switch (status) {
-            case ACTIVE -> "活跃";
-            case BANNED -> "封禁";
-            case INACTIVE -> "非活跃";
         };
     }
     
@@ -215,5 +157,38 @@ public class UserMenuController {
         } catch (NumberFormatException e) {
             return -1;
         }
+    }
+
+    private void viewPersonalInfo(User currentUser) {
+        System.out.println("\n=== 个人信息 ===");
+        System.out.println("用户名: " + currentUser.getUsername());
+        System.out.println("昵称: " + (currentUser.getNickName() != null ? currentUser.getNickName() : "未设置"));
+        System.out.println("邮箱: " + currentUser.getEmail());
+        System.out.println("角色: " + getUserRoleText(currentUser));
+        System.out.println("注册时间: " + currentUser.getRegisterTime());
+        System.out.println("最后登录: " + currentUser.getLastLogin());
+        System.out.println("声誉值: " + currentUser.getReputation());
+        System.out.println("发帖数: " + currentUser.getPostCount());
+        
+        System.out.println("\n按任意键返回...");
+        scanner.nextLine();
+    }
+    
+    private void viewMyTopics(User currentUser) {
+        System.out.println("\n=== 我的主题 ===");
+        // TODO: 实现查看用户主题的逻辑
+        System.out.println("功能尚未实现，敬请期待！");
+        
+        System.out.println("\n按任意键返回...");
+        scanner.nextLine();
+    }
+    
+    private void viewMyReplies(User currentUser) {
+        System.out.println("\n=== 我的回复 ===");
+        // TODO: 实现查看用户回复的逻辑
+        System.out.println("功能尚未实现，敬请期待！");
+        
+        System.out.println("\n按任意键返回...");
+        scanner.nextLine();
     }
 }

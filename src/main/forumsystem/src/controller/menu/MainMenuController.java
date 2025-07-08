@@ -50,7 +50,7 @@ public class MainMenuController {
         }
         
         System.out.println("\n【个人中心】");
-        System.out.println("12. 个人信息");
+        System.out.println("12. 个人中心");
         System.out.println("13. 修改密码");
         System.out.println("0. 退出登录");
         

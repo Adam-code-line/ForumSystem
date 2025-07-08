@@ -3,6 +3,8 @@ package main.forumsystem.src.controller.menu;
 import main.forumsystem.src.service.ForumService;
 import main.forumsystem.src.controller.ForumController;
 import main.forumsystem.src.entity.*;
+import main.forumsystem.src.service.UserBlockService;
+import main.forumsystem.src.service.impl.UserBlockServiceImpl;
 import java.util.List;
 import java.util.Scanner;
 
@@ -14,11 +16,13 @@ public class ForumMenuController {
     private final ForumService forumService;
     private final ForumController forumController;
     private final Scanner scanner;
+    private final UserBlockService userBlockService;
     
     public ForumMenuController(ForumService forumService, ForumController forumController, Scanner scanner) {
         this.forumService = forumService;
         this.forumController = forumController;
         this.scanner = scanner;
+        this.userBlockService = new UserBlockServiceImpl();
     }
     
     /**
@@ -91,12 +95,16 @@ public class ForumMenuController {
             
             // 显示主题列表
             List<Topic> topics = forumService.getTopicsByForum(forum.getForumId(), 1, 10);
-            if (topics.isEmpty()) {
+            
+            // 过滤被拉黑用户的主题
+            List<Topic> filteredTopics = userBlockService.filterBlockedContent(currentUser.getUserId(), topics);
+            
+            if (filteredTopics.isEmpty()) {
                 System.out.println("该板块暂无主题，快来发布第一个主题吧！");
             } else {
                 System.out.println("\n主题列表:");
-                for (int i = 0; i < topics.size(); i++) {
-                    Topic topic = topics.get(i);
+                for (int i = 0; i < filteredTopics.size(); i++) {
+                    Topic topic = filteredTopics.get(i);
                     String pinStatus = topic.isPinned() ? "[置顶]" : "";
                     String lockStatus = topic.isLocked() ? "[锁定]" : "";
                     System.out.printf("%d. %s%s%s (作者: %s, 回复: %d, 浏览: %d)\n",
@@ -122,7 +130,7 @@ public class ForumMenuController {
                     createTopicInForum(forum.getForumId(), currentUser);
                     break;
                 case 2:
-                    viewTopicDetail(topics, currentUser);
+                    viewTopicDetail(filteredTopics, currentUser);
                     break;
                 case 3:
                     if (canManageForum(currentUser, forum.getForumId())) {
@@ -143,16 +151,48 @@ public class ForumMenuController {
      * 创建主题
      */
     public void createTopic(User currentUser) {
-        viewAllForums();
-        System.out.print("\n请选择要发布主题的板块编号: ");
-        int choice = getIntInput();
+        System.out.println("\n=== 发表主题 ===");
         
-        List<Forum> forums = forumService.getAllForums();
-        if (choice > 0 && choice <= forums.size()) {
-            Forum selectedForum = forums.get(choice - 1);
-            createTopicInForum(selectedForum.getForumId(), currentUser);
+        // 先选择板块
+        System.out.print("请输入板块ID: ");
+        int forumId = getIntInput();
+        
+        if (forumId <= 0) {
+            System.out.println("无效的板块ID！");
+            return;
+        }
+        
+        // 检查是否被拉黑
+        if (!userBlockService.canUserPostInForum(currentUser.getUserId(), forumId)) {
+            System.out.println("您被该板块版主拉黑，无法发表主题！");
+            return;
+        }
+        
+        System.out.print("请输入主题标题: ");
+        String title = scanner.nextLine();
+        
+        if (title.trim().isEmpty()) {
+            System.out.println("标题不能为空！");
+            return;
+        }
+        
+        System.out.print("请输入主题内容: ");
+        String content = scanner.nextLine();
+        
+        if (content.trim().isEmpty()) {
+            System.out.println("内容不能为空！");
+            return;
+        }
+        
+        // 创建主题 - 修复参数顺序
+        ForumService.ForumResult result = forumService.createTopic(
+                currentUser.getUserId(), title.trim(), content.trim(), forumId
+        );
+        
+        if (result.isSuccess()) {
+            System.out.println("主题发表成功！");
         } else {
-            System.out.println("无效的板块编号！");
+            System.out.println("发表失败: " + result.getMessage());
         }
     }
     
@@ -160,17 +200,109 @@ public class ForumMenuController {
      * 在指定板块创建主题
      */
     private void createTopicInForum(int forumId, User currentUser) {
-        System.out.println("\n=== 发布新主题 ===");
+        System.out.println("\n=== 发表主题 ===");
+        
+        // 检查是否被版主拉黑
+        if (!userBlockService.canUserPostInForum(currentUser.getUserId(), forumId)) {
+            System.out.println("您被该板块版主拉黑，无法发表主题！");
+            return;
+        }
+        
         System.out.print("请输入主题标题: ");
         String title = scanner.nextLine();
+        
+        if (title.trim().isEmpty()) {
+            System.out.println("标题不能为空！");
+            return;
+        }
+        
         System.out.print("请输入主题内容: ");
         String content = scanner.nextLine();
         
-        ForumService.ForumResult result = forumController.createTopic(currentUser.getUserId(), title, content, forumId);
+        if (content.trim().isEmpty()) {
+            System.out.println("内容不能为空！");
+            return;
+        }
+        
+        // 创建主题 - 修复：直接使用 forumService 而不是 forumController
+        ForumService.ForumResult result = forumService.createTopic(
+                currentUser.getUserId(), title.trim(), content.trim(), forumId
+        );
+        
         if (result.isSuccess()) {
-            System.out.println("主题发布成功！");
+            System.out.println("主题发表成功！");
         } else {
-            System.out.println("发布失败: " + result.getMessage());
+            System.out.println("发表失败: " + result.getMessage());
+        }
+    }
+    
+    /**
+     * 回复主题
+     */
+    public void replyToTopic(User currentUser) {
+        System.out.println("\n=== 回复主题 ===");
+        System.out.print("请输入主题ID: ");
+        int topicId = getIntInput();
+        
+        if (topicId <= 0) {
+            System.out.println("无效的主题ID！");
+            return;
+        }
+        
+        // 检查是否被拉黑
+        if (!userBlockService.canUserReplyToTopic(currentUser.getUserId(), topicId)) {
+            System.out.println("您被主题作者或板块版主拉黑，无法回复！");
+            return;
+        }
+        
+        System.out.print("请输入回复内容: ");
+        String content = scanner.nextLine();
+        
+        if (content.trim().isEmpty()) {
+            System.out.println("回复内容不能为空！");
+            return;
+        }
+        
+        // 发表回复 - 修复参数顺序
+        ForumService.ForumResult result = forumService.createReply(
+                currentUser.getUserId(), content.trim(), topicId
+        );
+        
+        if (result.isSuccess()) {
+            System.out.println("回复发表成功！");
+        } else {
+            System.out.println("回复失败: " + result.getMessage());
+        }
+    }
+    
+    /**
+     * 查看主题列表（过滤被拉黑用户的内容）
+     */
+    public void viewTopics(User currentUser, int forumId) {
+        System.out.println("\n=== 主题列表 ===");
+        
+        // 获取主题列表
+        List<Topic> topics = forumService.getTopicsByForum(forumId, 1, 20);
+        
+        // 过滤被拉黑用户的内容
+        List<Topic> filteredTopics = userBlockService.filterBlockedContent(currentUser.getUserId(), topics);
+        
+        if (filteredTopics.isEmpty()) {
+            System.out.println("该板块暂无主题！");
+            return;
+        }
+        
+        System.out.printf("%-5s %-30s %-15s %-10s %-10s\n", 
+                "ID", "标题", "作者", "回复数", "浏览数");
+        System.out.println("------------------------------------------------------------------------");
+        
+        for (Topic topic : filteredTopics) {
+            System.out.printf("%-5d %-30s %-15s %-10d %-10d\n",
+                    topic.getTopicId(),
+                    topic.getTitle().length() > 25 ? topic.getTitle().substring(0, 25) + "..." : topic.getTitle(),
+                    "用户" + topic.getUserId(),
+                    topic.getReplyCount(),
+                    topic.getViewCount());
         }
     }
     
@@ -249,10 +381,14 @@ public class ForumMenuController {
         
         // 显示回复列表
         List<Reply> replies = forumService.getRepliesByTopic(topic.getTopicId(), 1, 10);
-        if (!replies.isEmpty()) {
+        
+        // 过滤被拉黑用户的回复
+        List<Reply> filteredReplies = userBlockService.filterBlockedContent(currentUser.getUserId(), replies);
+        
+        if (!filteredReplies.isEmpty()) {
             System.out.println("\n=== 回复列表 ===");
-            for (int i = 0; i < replies.size(); i++) {
-                Reply reply = replies.get(i);
+            for (int i = 0; i < filteredReplies.size(); i++) {
+                Reply reply = filteredReplies.get(i);
                 System.out.printf("%d楼 %s (%s):\n%s\n\n",
                         i + 2, getUserName(reply.getUserId()),
                         reply.getCreateTime(), reply.getContent());
@@ -274,10 +410,21 @@ public class ForumMenuController {
     
     private void createReply(int topicId, User currentUser) {
         System.out.println("\n=== 发表回复 ===");
+        
+        // 检查是否被拉黑
+        if (!userBlockService.canUserReplyToTopic(currentUser.getUserId(), topicId)) {
+            System.out.println("您被主题作者或板块版主拉黑，无法回复！");
+            return;
+        }
+        
         System.out.print("请输入回复内容: ");
         String content = scanner.nextLine();
         
-        ForumService.ForumResult result = forumController.createReply(currentUser.getUserId(), content, topicId);
+        // 修复：使用 forumService 而不是 forumController，并修复参数顺序
+        ForumService.ForumResult result = forumService.createReply(
+                currentUser.getUserId(), content, topicId
+        );
+        
         if (result.isSuccess()) {
             System.out.println("回复发表成功！");
         } else {
