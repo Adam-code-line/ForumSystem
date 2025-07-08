@@ -21,9 +21,9 @@ public interface LoginService {
      * @param username 用户名
      * @param password 密码
      * @param email 邮箱
-     * @return 注册结果对象
+     * @return 登录结果对象（包含新注册的用户）
      */
-    RegisterResult register(String username, String password, String email);
+    LoginResult register(String username, String password, String email);
     
     /**
      * 管理员注册
@@ -31,9 +31,9 @@ public interface LoginService {
      * @param password 密码
      * @param email 邮箱
      * @param adminKey 管理员密钥
-     * @return 注册结果对象
+     * @return 登录结果对象
      */
-    RegisterResult registerAdmin(String username, String password, String email, String adminKey);
+    LoginResult registerAdmin(String username, String password, String email, String adminKey);
     
     /**
      * 用户登出
@@ -90,33 +90,6 @@ public interface LoginService {
         
         public User getUser() {
             return user;
-        }
-    }
-    
-    /**
-     * 注册结果类
-     */
-    class RegisterResult {
-        private boolean success;
-        private String message;
-        private int userId;
-        
-        public RegisterResult(boolean success, String message, int userId) {
-            this.success = success;
-            this.message = message;
-            this.userId = userId;
-        }
-        
-        public boolean isSuccess() {
-            return success;
-        }
-        
-        public String getMessage() {
-            return message;
-        }
-        
-        public int getUserId() {
-            return userId;
         }
     }
 }

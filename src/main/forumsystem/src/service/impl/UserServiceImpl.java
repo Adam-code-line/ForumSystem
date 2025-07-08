@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 用户服务实现类
- * 提供用户管理、用户信息查询、用户权限管理等服务
+ * 专注于用户管理、用户信息查询、用户权限管理等核心业务
  */
 public class UserServiceImpl implements UserService {
     

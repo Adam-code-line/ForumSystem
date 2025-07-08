@@ -4,46 +4,53 @@ import main.forumsystem.src.dao.UserDao;
 import main.forumsystem.src.dao.impl.UserDaoImpl;
 import main.forumsystem.src.entity.User;
 import main.forumsystem.src.service.LoginService;
+import main.forumsystem.src.factory.UserFactory;
+import main.forumsystem.src.factory.impl.UserFactoryImpl;
 import main.forumsystem.src.util.PasswordUtil;
+import main.forumsystem.src.util.ValidationUtil;
 
 import java.time.LocalDateTime;
 
 /**
  * 登录服务实现类
+ * 专注于登录、注册、权限验证等核心业务逻辑
  */
 public class LoginServiceImpl implements LoginService {
     
     private final UserDao userDao;
-    private static final String ADMIN_KEY = "ADMIN_SECRET_KEY_2024"; // 管理员注册密钥
+    private final UserFactory userFactory;
+    private static final String ADMIN_KEY = "FORUM_ADMIN_2024"; // 管理员注册密钥
     
     public LoginServiceImpl() {
         this.userDao = new UserDaoImpl();
+        this.userFactory = new UserFactoryImpl();
     }
     
     @Override
     public LoginResult login(String username, String password) {
-        // 输入验证
-        if (username == null || username.trim().isEmpty()) {
-            return new LoginResult(false, "用户名不能为空", null);
-        }
-        if (password == null || password.trim().isEmpty()) {
-            return new LoginResult(false, "密码不能为空", null);
+        if (ValidationUtil.isEmpty(username) || ValidationUtil.isEmpty(password)) {
+            return new LoginResult(false, "用户名和密码不能为空", null);
         }
         
         try {
-            // 验证用户登录
-            User user = userDao.validateLogin(username, PasswordUtil.encrypt(password));
+            // 获取用户信息
+            User user = userDao.getUserByUsername(username.trim());
             if (user == null) {
-                return new LoginResult(false, "用户名或密码错误", null);
+                return new LoginResult(false, "用户名不存在", null);
+            }
+            
+            // 验证密码（使用加密工具）
+            if (!PasswordUtil.verify(password, user.getPassword())) {
+                return new LoginResult(false, "密码错误", null);
             }
             
             // 检查用户状态
             if (user.getStatus() == User.UserStatus.BANNED) {
-                return new LoginResult(false, "账户已被封禁，无法登录", null);
+                return new LoginResult(false, "账户已被封禁", null);
             }
             
             if (user.getStatus() == User.UserStatus.INACTIVE) {
-                return new LoginResult(false, "账户未激活，请先激活账户", null);
+                return new LoginResult(false, "账户未激活", null);
             }
             
             // 更新最后登录时间
@@ -53,112 +60,105 @@ public class LoginServiceImpl implements LoginService {
             
         } catch (Exception e) {
             e.printStackTrace();
-            return new LoginResult(false, "登录失败，系统错误", null);
+            return new LoginResult(false, "系统错误，登录失败", null);
         }
     }
     
     @Override
-    public RegisterResult register(String username, String password, String email) {
-        // 输入验证
-        if (username == null || username.trim().isEmpty()) {
-            return new RegisterResult(false, "用户名不能为空", -1);
+    public LoginResult register(String username, String password, String email) {
+        if (ValidationUtil.isEmpty(username) || ValidationUtil.isEmpty(password) || ValidationUtil.isEmpty(email)) {
+            return new LoginResult(false, "用户信息不能为空", null);
         }
-        if (password == null || password.length() < 6) {
-            return new RegisterResult(false, "密码长度不能少于6位", -1);
-        }
-        if (email == null || !isValidEmail(email)) {
-            return new RegisterResult(false, "邮箱格式不正确", -1);
+        
+        if (!ValidationUtil.isValidEmail(email)) {
+            return new LoginResult(false, "邮箱格式不正确", null);
         }
         
         try {
-            // 检查用户名是否已存在
-            if (userDao.usernameExists(username)) {
-                return new RegisterResult(false, "用户名已存在", -1);
+            // 检查用户名是否存在
+            if (userDao.usernameExists(username.trim())) {
+                return new LoginResult(false, "用户名已存在", null);
             }
             
-            // 检查邮箱是否已存在
-            if (userDao.emailExists(email)) {
-                return new RegisterResult(false, "邮箱已被注册", -1);
+            // 检查邮箱是否存在
+            if (userDao.emailExists(email.trim())) {
+                return new LoginResult(false, "邮箱已存在", null);
             }
             
-            // 创建新用户
-            User newUser = new User(username, PasswordUtil.encrypt(password), email);
-            newUser.setRole(User.UserRole.USER);
-            newUser.setStatus(User.UserStatus.ACTIVE);
-            newUser.setRegisterTime(LocalDateTime.now());
+            // 使用工厂创建普通用户
+            User newUser = userFactory.createNormalUser(username, password, email);
             
-            // 保存用户
+            // 保存用户到数据库
             boolean success = userDao.addUser(newUser);
             if (success) {
-                // 获取新用户ID
-                User savedUser = userDao.getUserByUsername(username);
-                return new RegisterResult(true, "注册成功", savedUser.getUserId());
+                // 重新获取用户（包含数据库生成的ID）
+                User savedUser = userDao.getUserByUsername(username.trim());
+                return new LoginResult(true, "注册成功", savedUser);
             } else {
-                return new RegisterResult(false, "注册失败，请重试", -1);
+                return new LoginResult(false, "注册失败，请重试", null);
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            return new RegisterResult(false, "注册失败，系统错误", -1);
+            return new LoginResult(false, "系统错误，注册失败", null);
         }
     }
     
     @Override
-    public RegisterResult registerAdmin(String username, String password, String email, String adminKey) {
-        // 验证管理员密钥
-        if (!ADMIN_KEY.equals(adminKey)) {
-            return new RegisterResult(false, "管理员密钥错误", -1);
+    public LoginResult registerAdmin(String username, String password, String email, String adminKey) {
+        if (ValidationUtil.isEmpty(username) || ValidationUtil.isEmpty(password) 
+            || ValidationUtil.isEmpty(email) || ValidationUtil.isEmpty(adminKey)) {
+            return new LoginResult(false, "管理员信息不能为空", null);
         }
         
-        // 输入验证
-        if (username == null || username.trim().isEmpty()) {
-            return new RegisterResult(false, "用户名不能为空", -1);
+        // 验证管理员密钥
+        if (!ADMIN_KEY.equals(adminKey)) {
+            return new LoginResult(false, "管理员密钥错误", null);
         }
-        if (password == null || password.length() < 6) {
-            return new RegisterResult(false, "密码长度不能少于6位", -1);
-        }
-        if (email == null || !isValidEmail(email)) {
-            return new RegisterResult(false, "邮箱格式不正确", -1);
+        
+        if (!ValidationUtil.isValidEmail(email)) {
+            return new LoginResult(false, "邮箱格式不正确", null);
         }
         
         try {
-            // 检查用户名是否已存在
-            if (userDao.usernameExists(username)) {
-                return new RegisterResult(false, "用户名已存在", -1);
+            // 检查用户名是否存在
+            if (userDao.usernameExists(username.trim())) {
+                return new LoginResult(false, "用户名已存在", null);
             }
             
-            // 检查邮箱是否已存在
-            if (userDao.emailExists(email)) {
-                return new RegisterResult(false, "邮箱已被注册", -1);
+            // 检查邮箱是否存在
+            if (userDao.emailExists(email.trim())) {
+                return new LoginResult(false, "邮箱已存在", null);
             }
             
-            // 创建新管理员用户
-            User newAdmin = new User(username, PasswordUtil.encrypt(password), email);
-            newAdmin.setRole(User.UserRole.ADMIN);
-            newAdmin.setStatus(User.UserStatus.ACTIVE);
-            newAdmin.setRegisterTime(LocalDateTime.now());
+            // 使用工厂创建管理员用户
+            User adminUser = userFactory.createAdmin(username, password, email);
             
-            // 保存管理员
-            boolean success = userDao.addUser(newAdmin);
+            // 保存用户到数据库
+            boolean success = userDao.addUser(adminUser);
             if (success) {
-                // 获取新用户ID
-                User savedUser = userDao.getUserByUsername(username);
-                return new RegisterResult(true, "管理员注册成功", savedUser.getUserId());
+                // 重新获取用户（包含数据库生成的ID）
+                User savedAdmin = userDao.getUserByUsername(username.trim());
+                return new LoginResult(true, "管理员注册成功", savedAdmin);
             } else {
-                return new RegisterResult(false, "管理员注册失败，请重试", -1);
+                return new LoginResult(false, "注册失败，请重试", null);
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            return new RegisterResult(false, "管理员注册失败，系统错误", -1);
+            return new LoginResult(false, "系统错误，注册失败", null);
         }
     }
     
     @Override
     public boolean logout(int userId) {
+        if (userId <= 0) {
+            return false;
+        }
+        
         try {
-            // 这里可以添加登出逻辑，比如清除session、记录登出时间等
-            // 目前只是简单返回true
+            // 更新最后登录时间（可选，记录用户活跃时间）
+            userDao.updateLastLogin(userId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -168,30 +168,24 @@ public class LoginServiceImpl implements LoginService {
     
     @Override
     public boolean hasPermission(int userId, User.UserRole requiredRole) {
+        if (userId <= 0 || requiredRole == null) {
+            return false;
+        }
+        
         try {
             User user = userDao.getUserById(userId);
-            if (user == null) {
+            if (user == null || user.getStatus() != User.UserStatus.ACTIVE) {
                 return false;
             }
             
-            // 检查用户是否被封禁
-            if (user.getStatus() == User.UserStatus.BANNED) {
-                return false;
-            }
-            
-            // 权限层级：ADMIN > MODERATOR > USER
-            User.UserRole userRole = user.getRole();
-            
+            // 权限级别检查：ADMIN > MODERATOR > USER
             switch (requiredRole) {
-                case USER:
-                    return userRole == User.UserRole.USER || 
-                           userRole == User.UserRole.MODERATOR || 
-                           userRole == User.UserRole.ADMIN;
-                case MODERATOR:
-                    return userRole == User.UserRole.MODERATOR || 
-                           userRole == User.UserRole.ADMIN;
                 case ADMIN:
-                    return userRole == User.UserRole.ADMIN;
+                    return user.getRole() == User.UserRole.ADMIN;
+                case MODERATOR:
+                    return user.getRole() == User.UserRole.ADMIN || user.getRole() == User.UserRole.MODERATOR;
+                case USER:
+                    return true; // 所有激活用户都有基本权限
                 default:
                     return false;
             }
@@ -204,27 +198,26 @@ public class LoginServiceImpl implements LoginService {
     
     @Override
     public boolean isUserBanned(int userId) {
+        if (userId <= 0) {
+            return true; // 无效用户ID视为被封禁
+        }
+        
         try {
             User user = userDao.getUserById(userId);
-            return user != null && user.getStatus() == User.UserStatus.BANNED;
+            return user == null || user.getStatus() == User.UserStatus.BANNED;
         } catch (Exception e) {
             e.printStackTrace();
-            return true; // 出错时默认认为用户被封禁
+            return true; // 发生异常时视为被封禁，确保安全
         }
     }
     
     @Override
     public boolean changePassword(int userId, String oldPassword, String newPassword) {
-        // 输入验证
-        if (oldPassword == null || oldPassword.trim().isEmpty()) {
-            return false;
-        }
-        if (newPassword == null || newPassword.length() < 6) {
+        if (userId <= 0 || ValidationUtil.isEmpty(oldPassword) || ValidationUtil.isEmpty(newPassword)) {
             return false;
         }
         
         try {
-            // 获取用户信息
             User user = userDao.getUserById(userId);
             if (user == null) {
                 return false;
@@ -235,19 +228,13 @@ public class LoginServiceImpl implements LoginService {
                 return false;
             }
             
-            // 更新密码
-            return userDao.changePassword(userId, PasswordUtil.encrypt(newPassword));
+            // 加密新密码并更新
+            String encryptedNewPassword = PasswordUtil.encrypt(newPassword);
+            return userDao.changePassword(userId, encryptedNewPassword);
             
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
-    }
-    
-    /**
-     * 验证邮箱格式
-     */
-    private boolean isValidEmail(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-ZaZ0-9.-]+\\.[A-Za-z]{2,}$");
     }
 }
