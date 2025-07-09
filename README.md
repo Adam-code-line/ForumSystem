@@ -118,7 +118,7 @@ ForumSystem/
 
 1. **克隆项目**
    ```bash
-   git clone https://github.com/your-username/ForumSystem.git
+   git clone https://github.com/Adam-code-line/ForumSystem.git
    cd ForumSystem
    ```
 
@@ -455,9 +455,9 @@ A: 在数据库中手动插入管理员用户或修改现有用户角色为 'ADM
 
 ## 联系方式
 
-- 项目地址：[https://github.com/your-username/ForumSystem](https://github.com/your-username/ForumSystem)
-- 问题反馈：[Issues](https://github.com/your-username/ForumSystem/issues)
-- 邮箱：your-email@example.com
+- 项目地址：[https://github.com/Adam-code-line/ForumSystem](https://github.com/Adam-code-line/ForumSystem)
+- 问题反馈：[Issues](https://github.com/Adam-code-line/ForumSystem/issues)
+- 邮箱：......
 
 ## 致谢
 
