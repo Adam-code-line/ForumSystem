@@ -61,7 +61,15 @@ public class ForumController {
             return new ForumService.ForumResult(false, "板块ID无效");
         }
         
-        return forumService.createTopic(userId, title.trim(), content.trim(), forumId);
+        // 调用服务层方法（包含敏感词过滤）
+        ForumService.ForumResult result = forumService.createTopic(userId, title.trim(), content.trim(), forumId);
+        
+        // 记录敏感词过滤日志
+        if (result.isSuccess() && result.getMessage().contains("敏感词")) {
+            System.out.println("用户ID: " + userId + " 发布主题时触发敏感词过滤");
+        }
+        
+        return result;
     }
     
     /**
@@ -81,7 +89,15 @@ public class ForumController {
             return new ForumService.ForumResult(false, "主题ID无效");
         }
         
-        return forumService.createReply(userId, content.trim(), topicId);
+        // 调用服务层方法（包含敏感词过滤）
+        ForumService.ForumResult result = forumService.createReply(userId, content.trim(), topicId);
+        
+        // 记录敏感词过滤日志
+        if (result.isSuccess() && result.getMessage().contains("敏感词")) {
+            System.out.println("用户ID: " + userId + " 发表回复时触发敏感词过滤");
+        }
+        
+        return result;
     }
     
     /**

@@ -258,9 +258,25 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
             String word = sensitiveWord.getWord();
             String replacement = sensitiveWord.getReplacement();
             
-            // 使用正则表达式进行不区分大小写的替换
-            Pattern pattern = Pattern.compile(Pattern.quote(word), Pattern.CASE_INSENSITIVE);
-            result = pattern.matcher(result).replaceAll(replacement);
+            // 添加空值检查
+            if (word == null || word.trim().isEmpty()) {
+                continue; // 跳过无效的敏感词
+            }
+            
+            // 如果替换字符为空，使用默认值
+            if (replacement == null) {
+                replacement = "***"; // 默认替换字符
+            }
+            
+            try {
+                // 使用正则表达式进行不区分大小写的替换
+                Pattern pattern = Pattern.compile(Pattern.quote(word), Pattern.CASE_INSENSITIVE);
+                result = pattern.matcher(result).replaceAll(replacement);
+            } catch (Exception e) {
+                // 如果正则替换失败，使用简单字符串替换
+                System.err.println("正则替换失败，使用简单替换: " + word);
+                result = result.replaceAll("(?i)" + Pattern.quote(word), replacement);
+            }
         }
         
         return result;

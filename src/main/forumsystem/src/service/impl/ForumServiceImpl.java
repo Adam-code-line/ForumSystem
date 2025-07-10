@@ -1,14 +1,18 @@
 package main.forumsystem.src.service.impl;
 
 import main.forumsystem.src.service.ForumService;
+import main.forumsystem.src.service.AdminService;
+import main.forumsystem.src.service.impl.AdminServiceImpl;
 import main.forumsystem.src.dao.UserDao;
 import main.forumsystem.src.dao.ForumDao;
 import main.forumsystem.src.dao.TopicDao;
 import main.forumsystem.src.dao.ReplyDao;
+import main.forumsystem.src.dao.SensitiveWordDao;
 import main.forumsystem.src.dao.impl.UserDaoImpl;
 import main.forumsystem.src.dao.impl.ForumDaoImpl;
 import main.forumsystem.src.dao.impl.TopicDaoImpl;
 import main.forumsystem.src.dao.impl.ReplyDaoImpl;
+import main.forumsystem.src.dao.impl.SensitiveWordDaoImpl;
 import main.forumsystem.src.entity.User;
 import main.forumsystem.src.entity.Forum;
 import main.forumsystem.src.entity.Topic;
@@ -36,6 +40,8 @@ public class ForumServiceImpl implements ForumService {
     private final ReplyDao replyDao;
     private final UserFactory userFactory;
     private final UserBlockService userBlockService;
+    private final AdminService adminService;
+    private final SensitiveWordDao sensitiveWordDao;
     
     public ForumServiceImpl() {
         this.userDao = new UserDaoImpl();
@@ -44,6 +50,8 @@ public class ForumServiceImpl implements ForumService {
         this.replyDao = new ReplyDaoImpl();
         this.userFactory = new UserFactoryImpl();
         this.userBlockService = new UserBlockServiceImpl();
+        this.adminService = new AdminServiceImpl();
+        this.sensitiveWordDao = new SensitiveWordDaoImpl();
     }
     
     // ==================== 板块管理 ====================
@@ -158,7 +166,23 @@ public class ForumServiceImpl implements ForumService {
                 return new ForumResult(false, "您没有在该板块发帖的权限");
             }
             
-            // 使用工厂创建主题对象
+            // === 敏感词检查和过滤 ===
+            String originalTitle = title;
+            String originalContent = content;
+            
+            // 检查标题是否包含敏感词
+            if (adminService.containsSensitiveWord(title)) {
+                System.out.println("检测到标题包含敏感词，自动替换中...");
+                title = sensitiveWordDao.replaceSensitiveWords(title);
+            }
+            
+            // 检查内容是否包含敏感词
+            if (adminService.containsSensitiveWord(content)) {
+                System.out.println("检测到内容包含敏感词，自动替换中...");
+                content = sensitiveWordDao.replaceSensitiveWords(content);
+            }
+            
+            // 使用工厂创建主题对象（使用过滤后的内容）
             Topic topic = operationFactory.createTopic(title, content, forumId, user);
             
             // 保存主题到数据库
@@ -167,7 +191,13 @@ public class ForumServiceImpl implements ForumService {
                 // 更新统计数据
                 userDao.updatePostCount(userId, 1);
                 forumDao.updateTopicCount(forumId, 1);
-                return new ForumResult(true, "主题发布成功");
+                
+                // 如果内容被过滤，提示用户
+                if (!originalTitle.equals(title) || !originalContent.equals(content)) {
+                    return new ForumResult(true, "主题发布成功！检测到敏感词已自动替换。");
+                } else {
+                    return new ForumResult(true, "主题发布成功");
+                }
             } else {
                 return new ForumResult(false, "发布失败，请重试");
             }
@@ -300,7 +330,16 @@ public class ForumServiceImpl implements ForumService {
                 return new ForumResult(false, "您没有回复该主题的权限");
             }
             
-            // 使用工厂创建回复对象
+            // === 敏感词检查和过滤 ===
+            String originalContent = content;
+            
+            // 检查回复内容是否包含敏感词
+            if (adminService.containsSensitiveWord(content)) {
+                System.out.println("检测到回复内容包含敏感词，自动替换中...");
+                content = sensitiveWordDao.replaceSensitiveWords(content);
+            }
+            
+            // 使用工厂创建回复对象（使用过滤后的内容）
             Reply reply = operationFactory.createReply(content, topicId, user);
             
             // 保存回复到数据库
@@ -317,7 +356,12 @@ public class ForumServiceImpl implements ForumService {
                     forumDao.updatePostCount(topic.getForumId(), 1);
                 }
                 
-                return new ForumResult(true, "回复发表成功");
+                // 如果内容被过滤，提示用户
+                if (!originalContent.equals(content)) {
+                    return new ForumResult(true, "回复发表成功！检测到敏感词已自动替换。");
+                } else {
+                    return new ForumResult(true, "回复发表成功");
+                }
             } else {
                 return new ForumResult(false, "回复失败，请重试");
             }

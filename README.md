@@ -141,6 +141,7 @@ ForumSystem/
        password VARCHAR(255) NOT NULL,
        email VARCHAR(100) UNIQUE NOT NULL,
        nick_name VARCHAR(50),
+       avatar VARCHAR(255) DEFAULT NULL,
        role ENUM('USER', 'MODERATOR', 'ADMIN') DEFAULT 'USER',
        status ENUM('ACTIVE', 'BANNED', 'INACTIVE') DEFAULT 'ACTIVE',
        post_count INT DEFAULT 0,
