@@ -10,9 +10,16 @@ import java.util.ArrayList;
 
 /**
  * 用户拉黑数据访问实现类
+ * 提供对用户拉黑记录表（user_blocks）的增删改查操作，以及相关的业务逻辑处理。
  */
 public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
-    
+
+    /**
+     * 添加拉黑记录
+     * 将新的拉黑记录插入到数据库中。
+     * @param userBlock 拉黑记录对象，包含拉黑者ID、被拉黑者ID、拉黑时间、原因等信息
+     * @return boolean 是否添加成功
+     */
     @Override
     public boolean addBlock(UserBlock userBlock) {
         if (userBlock == null) {
@@ -48,7 +55,14 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
             return false;
         }
     }
-    
+
+    /**
+     * 移除拉黑记录
+     * 将指定的拉黑记录状态设置为 "removed"。
+     * @param blockerId 拉黑者ID
+     * @param blockedId 被拉黑者ID
+     * @return boolean 是否移除成功
+     */
     @Override
     public boolean removeBlock(int blockerId, int blockedId) {
         if (blockerId <= 0 || blockedId <= 0) {
@@ -75,7 +89,14 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
             return false;
         }
     }
-    
+
+    /**
+     * 检查是否存在拉黑记录
+     * 判断指定用户是否已拉黑另一个用户。
+     * @param blockerId 拉黑者ID
+     * @param blockedId 被拉黑者ID
+     * @return boolean 是否存在拉黑记录
+     */
     @Override
     public boolean isBlocked(int blockerId, int blockedId) {
         if (blockerId <= 0 || blockedId <= 0 || blockerId == blockedId) {
@@ -103,7 +124,13 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
         
         return false;
     }
-    
+
+    /**
+     * 获取用户拉黑列表
+     * 查询指定用户拉黑的所有用户。
+     * @param userId 用户ID
+     * @return List<UserBlock> 拉黑记录列表
+     */
     @Override
     public List<UserBlock> getUserBlockList(int userId) {
         if (userId <= 0) {
@@ -133,7 +160,13 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
         
         return blockList;
     }
-    
+
+    /**
+     * 获取拉黑指定用户的列表
+     * 查询所有拉黑指定用户的用户。
+     * @param blockedUserId 被拉黑者ID
+     * @return List<UserBlock> 拉黑记录列表
+     */
     @Override
     public List<UserBlock> getBlockedByList(int blockedUserId) {
         if (blockedUserId <= 0) {
@@ -163,7 +196,14 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
         
         return blockList;
     }
-    
+
+    /**
+     * 获取拉黑记录
+     * 查询指定用户之间的拉黑记录。
+     * @param blockerId 拉黑者ID
+     * @param blockedId 被拉黑者ID
+     * @return UserBlock 拉黑记录对象
+     */
     @Override
     public UserBlock getBlockRecord(int blockerId, int blockedId) {
         if (blockerId <= 0 || blockedId <= 0) {
@@ -191,7 +231,13 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
         
         return null;
     }
-    
+
+    /**
+     * 清理指定用户的拉黑记录
+     * 删除指定用户的所有拉黑记录（包括拉黑和被拉黑）。
+     * @param userId 用户ID
+     * @return boolean 是否清理成功
+     */
     @Override
     public boolean cleanupBlocksForDeletedUser(int userId) {
         if (userId <= 0) {
@@ -215,9 +261,12 @@ public class UserBlockDaoImpl extends BaseDao implements UserBlockDao {
             return false;
         }
     }
-    
+
     /**
      * 将ResultSet映射为UserBlock对象
+     * @param rs 数据库查询结果集
+     * @return UserBlock 拉黑记录对象
+     * @throws SQLException 如果映射失败
      */
     private UserBlock mapResultSetToUserBlock(ResultSet rs) throws SQLException {
         UserBlock userBlock = new UserBlock();

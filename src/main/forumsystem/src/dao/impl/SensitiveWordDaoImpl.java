@@ -15,9 +15,16 @@ import java.util.regex.Pattern;
 
 /**
  * 敏感词数据访问实现类
+ * 提供对敏感词表（sensitive_words）的增删改查操作，以及相关的业务逻辑处理。
  */
 public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
 
+    /**
+     * 添加敏感词
+     * 将新的敏感词插入到数据库中。
+     * @param sensitiveWord 敏感词对象，包含敏感词、替换字符和创建时间
+     * @return boolean 是否添加成功
+     */
     @Override
     public boolean addSensitiveWord(SensitiveWord sensitiveWord) {
         // 检查敏感词是否已存在
@@ -46,6 +53,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 批量添加敏感词
+     * 将多个敏感词插入到数据库中。
+     * @param sensitiveWords 敏感词列表
+     * @return int 成功添加的敏感词数量
+     */
     @Override
     public int batchAddSensitiveWords(List<SensitiveWord> sensitiveWords) {
         if (sensitiveWords == null || sensitiveWords.isEmpty()) {
@@ -82,6 +95,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return successCount;
     }
 
+    /**
+     * 删除敏感词（根据ID）
+     * 从数据库中删除指定ID的敏感词。
+     * @param wordId 敏感词ID
+     * @return boolean 是否删除成功
+     */
     @Override
     public boolean deleteSensitiveWord(int wordId) {
         String sql = "DELETE FROM sensitive_words WHERE word_id = ?";
@@ -94,6 +113,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 删除敏感词（根据词）
+     * 从数据库中删除指定敏感词。
+     * @param word 敏感词
+     * @return boolean 是否删除成功
+     */
     @Override
     public boolean deleteSensitiveWordByWord(String word) {
         String sql = "DELETE FROM sensitive_words WHERE word = ?";
@@ -106,6 +131,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 批量删除敏感词
+     * 从数据库中删除多个敏感词。
+     * @param wordIds 敏感词ID数组
+     * @return int 成功删除的敏感词数量
+     */
     @Override
     public int batchDeleteSensitiveWords(int[] wordIds) {
         if (wordIds == null || wordIds.length == 0) {
@@ -133,6 +164,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 更新敏感词
+     * 修改敏感词的内容或替换字符。
+     * @param sensitiveWord 敏感词对象，包含需要更新的内容
+     * @return boolean 是否更新成功
+     */
     @Override
     public boolean updateSensitiveWord(SensitiveWord sensitiveWord) {
         String sql = "UPDATE sensitive_words SET word = ?, replacement = ? WHERE word_id = ?";
@@ -151,24 +188,46 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 根据敏感词ID获取敏感词
+     * 查询指定ID的敏感词。
+     * @param wordId 敏感词ID
+     * @return SensitiveWord 敏感词对象
+     */
     @Override
     public SensitiveWord getSensitiveWordById(int wordId) {
         String sql = "SELECT * FROM sensitive_words WHERE word_id = ?";
         return getSingleSensitiveWord(sql, wordId);
     }
 
+    /**
+     * 根据敏感词内容获取敏感词
+     * 查询指定敏感词的详细信息。
+     * @param word 敏感词
+     * @return SensitiveWord 敏感词对象
+     */
     @Override
     public SensitiveWord getSensitiveWordByWord(String word) {
         String sql = "SELECT * FROM sensitive_words WHERE word = ?";
         return getSingleSensitiveWord(sql, word.trim());
     }
 
+    /**
+     * 获取所有敏感词
+     * 查询数据库中的所有敏感词。
+     * @return List<SensitiveWord> 敏感词列表
+     */
     @Override
     public List<SensitiveWord> getAllSensitiveWords() {
         String sql = "SELECT * FROM sensitive_words ORDER BY create_time DESC";
         return getMultipleSensitiveWords(sql);
     }
 
+    /**
+     * 获取所有敏感词集合
+     * 查询数据库中的所有敏感词，并返回一个集合。
+     * @return Set<String> 敏感词集合
+     */
     @Override
     public Set<String> getAllSensitiveWordSet() {
         String sql = "SELECT word FROM sensitive_words";
@@ -186,6 +245,13 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return wordSet;
     }
 
+    /**
+     * 分页获取敏感词
+     * 查询数据库中的敏感词，并进行分页。
+     * @param page 页码（从1开始）
+     * @param size 每页记录数
+     * @return List<SensitiveWord> 敏感词列表
+     */
     @Override
     public List<SensitiveWord> getSensitiveWordsByPage(int page, int size) {
         String sql = "SELECT * FROM sensitive_words ORDER BY create_time DESC LIMIT ? OFFSET ?";
@@ -193,6 +259,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return getMultipleSensitiveWords(sql, size, offset);
     }
 
+    /**
+     * 搜索敏感词
+     * 根据关键词模糊查询敏感词。
+     * @param keyword 搜索关键词
+     * @return List<SensitiveWord> 敏感词列表
+     */
     @Override
     public List<SensitiveWord> searchSensitiveWords(String keyword) {
         String sql = "SELECT * FROM sensitive_words WHERE word LIKE ? ORDER BY create_time DESC";
@@ -200,6 +272,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return getMultipleSensitiveWords(sql, searchPattern);
     }
 
+    /**
+     * 检查敏感词是否存在
+     * 查询指定敏感词是否已存在于数据库中。
+     * @param word 敏感词
+     * @return boolean 是否存在
+     */
     @Override
     public boolean existsSensitiveWord(String word) {
         String sql = "SELECT COUNT(*) as count FROM sensitive_words WHERE word = ?";
@@ -214,18 +292,34 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return false;
     }
 
+    /**
+     * 获取敏感词总数
+     * 查询数据库中的敏感词总数量。
+     * @return int 敏感词数量
+     */
     @Override
     public int getSensitiveWordCount() {
         String sql = "SELECT COUNT(*) as count FROM sensitive_words";
         return getCount(sql);
     }
 
+    /**
+     * 获取当天新增的敏感词数量
+     * 查询当天添加的敏感词数量。
+     * @return int 当天新增敏感词数量
+     */
     @Override
     public int getTodayAddedCount() {
         String sql = "SELECT COUNT(*) as count FROM sensitive_words WHERE DATE(create_time) = CURDATE()";
         return getCount(sql);
     }
 
+    /**
+     * 在文本中查找敏感词
+     * 检查指定文本中是否包含敏感词。
+     * @param text 待检查的文本
+     * @return List<String> 包含的敏感词列表
+     */
     @Override
     public List<String> findSensitiveWordsInText(String text) {
         List<String> foundWords = new ArrayList<>();
@@ -245,6 +339,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return foundWords;
     }
 
+    /**
+     * 替换文本中的敏感词
+     * 将文本中的敏感词替换为指定的替换字符。
+     * @param text 待替换的文本
+     * @return String 替换后的文本
+     */
     @Override
     public String replaceSensitiveWords(String text) {
         if (text == null || text.trim().isEmpty()) {
@@ -282,12 +382,24 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         return result;
     }
 
+    /**
+     * 根据敏感词长度范围获取敏感词
+     * 查询指定长度范围内的敏感词。
+     * @param minLength 最小长度
+     * @param maxLength 最大长度
+     * @return List<SensitiveWord> 敏感词列表
+     */
     @Override
     public List<SensitiveWord> getSensitiveWordsByLength(int minLength, int maxLength) {
         String sql = "SELECT * FROM sensitive_words WHERE LENGTH(word) BETWEEN ? AND ? ORDER BY LENGTH(word), word";
         return getMultipleSensitiveWords(sql, minLength, maxLength);
     }
 
+    /**
+     * 清空所有敏感词
+     * 删除数据库中的所有敏感词。
+     * @return boolean 是否清空成功
+     */
     @Override
     public boolean clearAllSensitiveWords() {
         String sql = "DELETE FROM sensitive_words";
@@ -300,6 +412,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 从文件导入敏感词
+     * 读取文件中的敏感词并导入到数据库中。
+     * @param filePath 文件路径
+     * @return int 成功导入的敏感词数量
+     */
     @Override
     public int importSensitiveWordsFromFile(String filePath) {
         List<SensitiveWord> sensitiveWords = new ArrayList<>();
@@ -329,6 +447,12 @@ public class SensitiveWordDaoImpl extends BaseDao implements SensitiveWordDao {
         }
     }
 
+    /**
+     * 导出敏感词到文件
+     * 将数据库中的敏感词导出到指定文件。
+     * @param filePath 文件路径
+     * @return boolean 是否导出成功
+     */
     @Override
     public boolean exportSensitiveWordsToFile(String filePath) {
         try (BufferedWriter writer = new BufferedWriter(

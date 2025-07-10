@@ -16,9 +16,15 @@ import java.util.Map;
 
 /**
  * 封禁记录数据访问实现类
+ * 提供对封禁记录表（ban_records）的增删改查操作，以及相关的业务逻辑处理。
  */
 public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
 
+    /**
+     * 添加封禁记录
+     * @param banRecord 封禁记录对象
+     * @return boolean 是否添加成功
+     */
     @Override
     public boolean addBanRecord(BanRecord banRecord) {
         String sql = """
@@ -33,6 +39,7 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
                 banRecord.setBanStart(LocalDateTime.now());
             }
             
+            // 执行插入操作
             int result = executeUpdate(sql,
                 banRecord.getUserId(),
                 banRecord.getAdminId(),
@@ -55,6 +62,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         }
     }
 
+    /**
+     * 删除封禁记录
+     * @param banId 封禁记录ID
+     * @return boolean 是否删除成功
+     */
     @Override
     public boolean deleteBanRecord(int banId) {
         String sql = "DELETE FROM ban_records WHERE ban_id = ?";
@@ -67,6 +79,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         }
     }
 
+    /**
+     * 更新封禁记录
+     * @param banRecord 封禁记录对象
+     * @return boolean 是否更新成功
+     */
     @Override
     public boolean updateBanRecord(BanRecord banRecord) {
         String sql = """
@@ -94,12 +111,22 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         }
     }
 
+    /**
+     * 根据封禁记录ID获取封禁记录
+     * @param banId 封禁记录ID
+     * @return BanRecord 封禁记录对象
+     */
     @Override
     public BanRecord getBanRecordById(int banId) {
         String sql = "SELECT * FROM ban_records WHERE ban_id = ?";
         return getSingleBanRecord(sql, banId);
     }
 
+    /**
+     * 获取封禁记录及其详细信息（包括用户和管理员信息）
+     * @param banId 封禁记录ID
+     * @return BanRecord 封禁记录对象
+     */
     @Override
     public BanRecord getBanRecordWithDetails(int banId) {
         String sql = """
@@ -142,6 +169,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return null;
     }
 
+    /**
+     * 根据用户ID获取该用户的所有封禁记录
+     * @param userId 用户ID
+     * @return List<BanRecord> 封禁记录列表
+     */
     @Override
     public List<BanRecord> getBanRecordsByUserId(int userId) {
         String sql = """
@@ -152,6 +184,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getMultipleBanRecords(sql, userId);
     }
 
+    /**
+     * 获取用户当前的封禁记录（活跃状态）
+     * @param userId 用户ID
+     * @return BanRecord 当前封禁记录
+     */
     @Override
     public BanRecord getCurrentBanRecord(int userId) {
         String sql = """
@@ -164,6 +201,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getSingleBanRecord(sql, userId);
     }
 
+    /**
+     * 根据管理员ID获取该管理员执行的所有封禁记录
+     * @param adminId 管理员ID
+     * @return List<BanRecord> 封禁记录列表
+     */
     @Override
     public List<BanRecord> getBanRecordsByAdminId(int adminId) {
         String sql = """
@@ -174,6 +216,12 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getMultipleBanRecords(sql, adminId);
     }
 
+    /**
+     * 分页获取封禁记录
+     * @param page 页码（从1开始）
+     * @param size 每页记录数
+     * @return List<BanRecord> 封禁记录列表
+     */
     @Override
     public List<BanRecord> getBanRecordsByPage(int page, int size) {
         String sql = """
@@ -185,6 +233,11 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getMultipleBanRecords(sql, size, offset);
     }
 
+    /**
+     * 根据封禁状态获取封禁记录
+     * @param status 封禁状态
+     * @return List<BanRecord> 封禁记录列表
+     */
     @Override
     public List<BanRecord> getBanRecordsByStatus(BanRecord.BanStatus status) {
         String sql = """
@@ -195,6 +248,10 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getMultipleBanRecords(sql, status.getValue());
     }
 
+    /**
+     * 获取所有活跃的封禁记录
+     * @return List<BanRecord> 活跃封禁记录列表
+     */
     @Override
     public List<BanRecord> getActiveBanRecords() {
         String sql = """
@@ -206,6 +263,10 @@ public class BanRecordDaoImpl extends BaseDao implements BanRecordDao {
         return getMultipleBanRecords(sql);
     }
 
+    /**
+     * 获取所有已过期的封禁记录
+     * @return List<BanRecord> 过期封禁记录列表
+     */
     @Override
     public List<BanRecord> getExpiredBanRecords() {
         String sql = """
