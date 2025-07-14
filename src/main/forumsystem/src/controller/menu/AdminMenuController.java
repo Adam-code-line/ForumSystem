@@ -292,17 +292,21 @@ public class AdminMenuController {
         System.out.println("\n=== 封禁记录 ===");
         System.out.println("1. 查看所有封禁记录");
         System.out.println("2. 查看指定用户封禁记录");
+        System.out.println("3. 清理过期封禁记录"); // 新增选项
         System.out.println("0. 返回");
         System.out.print("请选择操作: ");
         
         int choice = getIntInput();
         switch (choice) {
             case 1:
+                adminService.cleanExpiredData();
                 viewAllBanRecords();
                 break;
             case 2:
                 viewUserBanRecords();
                 break;
+            case 3:
+                manualCleanExpiredBans(); // 手动清理
             case 0:
                 return;
             default:
@@ -322,17 +326,21 @@ public class AdminMenuController {
         }
         
         System.out.println("\n所有封禁记录:");
-        System.out.printf("%-10s %-15s %-15s %-20s %-20s %-10s\n", 
-                "用户ID", "封禁原因", "执行管理员", "开始时间", "结束时间", "状态");
+        // 修改表头显示用户名
+        System.out.printf("%-15s %-15s %-15s %-20s %-20s %-10s\n", 
+                "被封用户", "封禁原因", "执行管理员", "开始时间", "结束时间", "状态");
         System.out.println("--------------------------------------------------------------------------------");
         
         for (BanRecord record : banRecords) {
             String endTime = record.isPermanent() ? "永久" : 
                            (record.getBanEnd() != null ? record.getBanEnd().toString() : "未知");
             String adminName = getUserNameById(record.getAdminId());
+            // 获取被封用户名
+            String userName = getUserNameById(record.getUserId());
             
-            System.out.printf("%-10d %-15s %-15s %-20s %-20s %-10s\n",
-                    record.getUserId(),
+            // 显示用户名而不是用户ID
+            System.out.printf("%-15s %-15s %-15s %-20s %-20s %-10s\n",
+                    userName, // 显示用户名
                     record.getReason().length() > 12 ? record.getReason().substring(0, 12) + "..." : record.getReason(),
                     adminName,
                     record.getBanStart() != null ? record.getBanStart().toString() : "未知",
@@ -382,6 +390,20 @@ public class AdminMenuController {
                     record.getBanStart() != null ? record.getBanStart().toString() : "未知",
                     endTime,
                     getBanStatusText(record.getStatus()));
+        }
+    }
+
+    /**
+     * 手动清理过期封禁记录
+     */
+    private void manualCleanExpiredBans() {
+        System.out.println("\n=== 清理过期封禁记录 ===");
+        System.out.print("确认清理所有过期的封禁记录？(y/n): ");
+        String confirm = scanner.nextLine();
+
+        if ("y".equalsIgnoreCase(confirm)) {
+            int cleanedCount = adminService.cleanExpiredData().getData() != null ? (int) adminService.cleanExpiredData().getData() : 0;
+            System.out.println("清理完成，共处理了 " + cleanedCount + " 条过期封禁记录");
         }
     }
     

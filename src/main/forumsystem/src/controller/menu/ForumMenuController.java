@@ -184,7 +184,7 @@ public class ForumMenuController {
             return;
         }
         
-        // 创建主题 - 修复参数顺序
+        // 创建主题
         ForumService.ForumResult result = forumService.createTopic(
                 currentUser.getUserId(), title.trim(), content.trim(), forumId
         );
