@@ -18,6 +18,13 @@ import java.util.List;
  */
 public class UserDaoImpl implements UserDao {
 
+    /**
+     * 添加用户到数据库。
+     * 如果用户的注册时间为空，则设置为当前时间。
+     * 
+     * @param user 用户对象
+     * @return 添加成功返回true，否则返回false
+     */
     @Override
     public boolean addUser(User user) {
         String sql = """
@@ -38,6 +45,7 @@ public class UserDaoImpl implements UserDao {
             conn = BaseDao.getConnection();
             pstmt = conn.prepareStatement(sql);
             
+            // 设置SQL参数
             pstmt.setString(1, user.getUsername());
             pstmt.setString(2, user.getPassword());
             pstmt.setString(3, user.getEmail());
@@ -50,6 +58,7 @@ public class UserDaoImpl implements UserDao {
             pstmt.setInt(10, user.getPostCount());
             pstmt.setInt(11, user.getReputation());
             
+            // 执行插入操作
             int result = pstmt.executeUpdate();
             return result > 0;
             
@@ -57,10 +66,17 @@ public class UserDaoImpl implements UserDao {
             e.printStackTrace();
             return false;
         } finally {
+            // 关闭资源
             BaseDao.close(conn, pstmt, null);
         }
     }
 
+    /**
+     * 根据用户ID删除用户。
+     * 
+     * @param userId 用户ID
+     * @return 删除成功返回true，否则返回false
+     */
     @Override
     public boolean deleteUser(int userId) {
         String sql = "DELETE FROM users WHERE user_id = ?";
