@@ -527,4 +527,104 @@ public class AdminServiceImpl implements AdminService {
             return new AdminResult(false, "清理失败，系统错误");
         }
     }
+
+    @Override
+    public List<Forum> getAllForums() {
+        try {
+            return forumDao.getAllForums();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<Topic> getAllTopics() {
+        try {
+            return topicDao.getAllTopics();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<Topic> getTopicsByForum(int forumId) {
+        try {
+            return topicDao.getTopicsByForum(forumId); 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<Reply> getAllReplies() {
+        try {
+            return replyDao.getAllReplies();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<Reply> getRepliesByTopic(int topicId) {
+        try {
+            return replyDao.getRepliesByTopicId(topicId); // 使用现有的方法
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public Topic getTopicById(int topicId) {
+        try {
+            return topicDao.getTopicById(topicId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public Forum getForumById(int forumId) {
+        try {
+            return forumDao.getForumById(forumId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public Reply getReplyById(int replyId) {
+        try {
+            return replyDao.getReplyById(replyId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public int batchDeleteForums(int[] forumIds) {
+        try {
+            return forumDao.batchDeleteForums(forumIds);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    @Override
+    public int processExpiredBans() {
+        try {
+            return banRecordDao.processExpiredBans();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
 }

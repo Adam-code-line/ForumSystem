@@ -252,4 +252,17 @@ public interface TopicDao {
      * @return 相关主题列表
      */
     List<Topic> getRelatedTopics(int topicId, int limit);
+
+    /**
+     * 获取所有主题
+     * @return 所有主题列表
+     */
+    List<Topic> getAllTopics();
+
+    /**
+     * 根据板块ID获取主题列表
+     * @param forumId 板块ID
+     * @return 主题列表
+     */
+    List<Topic> getTopicsByForum(int forumId);
 }

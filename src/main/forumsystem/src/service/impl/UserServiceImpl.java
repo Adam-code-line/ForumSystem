@@ -19,7 +19,13 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl() {
         this.userDao = new UserDaoImpl();
     }
-    
+
+    @Override
+    public String getUserName(int userId) {
+        User user = getUserById(userId);
+        return user != null ? user.getUsername() : "未知用户";
+    }
+
     @Override
     public User getUserById(int userId) {
         if (userId <= 0) {

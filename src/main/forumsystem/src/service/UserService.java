@@ -10,6 +10,11 @@ import java.util.List;
 public interface UserService {
     
     // ==================== 基础查询功能 ====================
+
+    /*
+     * 获取用户名称
+     */
+    String getUserName(int userId);
     
     /**
      * 获取用户详细信息

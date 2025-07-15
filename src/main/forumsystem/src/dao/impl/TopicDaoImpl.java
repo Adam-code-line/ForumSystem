@@ -561,6 +561,26 @@ public class TopicDaoImpl extends BaseDao implements TopicDao {
         }
     }
 
+    @Override
+    public List<Topic> getAllTopics() {
+        String sql = """
+            SELECT * FROM topics 
+            WHERE status != 'deleted' 
+            ORDER BY create_time DESC
+            """;
+        return getMultipleTopics(sql);
+    }
+
+    @Override
+    public List<Topic> getTopicsByForum(int forumId) {
+        String sql = """
+            SELECT * FROM topics 
+            WHERE forum_id = ? AND status != 'deleted' 
+            ORDER BY is_pinned DESC, last_reply_time DESC, create_time DESC
+            """;
+        return getMultipleTopics(sql, forumId);
+    }
+
     // 私有辅助方法：获取单个主题
     private Topic getSingleTopic(String sql, Object... params) {
         try {

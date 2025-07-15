@@ -402,7 +402,8 @@ public class AdminMenuController {
         String confirm = scanner.nextLine();
 
         if ("y".equalsIgnoreCase(confirm)) {
-            int cleanedCount = adminService.cleanExpiredData().getData() != null ? (int) adminService.cleanExpiredData().getData() : 0;
+            // 修复：直接调用 processExpiredBans 方法
+            int cleanedCount = adminService.processExpiredBans();
             System.out.println("清理完成，共处理了 " + cleanedCount + " 条过期封禁记录");
         }
     }

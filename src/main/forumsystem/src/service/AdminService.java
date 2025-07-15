@@ -138,6 +138,12 @@ public interface AdminService {
      */
     AdminResult cleanEmptyForums();
     
+    /**
+     * 处理过期的封禁记录
+     * @return int 处理的记录数量
+     */
+    int processExpiredBans();
+    
     // ==================== 结果类 ====================
     
     /**
@@ -171,4 +177,49 @@ public interface AdminService {
             return data;
         }
     }
+
+    /**
+     * 获取所有板块
+     */
+    List<Forum> getAllForums();
+
+    /**
+     * 获取所有主题
+     */
+    List<Topic> getAllTopics();
+
+    /**
+     * 获取指定板块的主题
+     */
+    List<Topic> getTopicsByForum(int forumId);
+
+    /**
+     * 获取所有回复
+     */
+    List<Reply> getAllReplies();
+
+    /**
+     * 获取指定主题的回复
+     */
+    List<Reply> getRepliesByTopic(int topicId);
+
+    /**
+     * 根据主题ID获取主题
+     */
+    Topic getTopicById(int topicId);
+
+    /**
+     * 根据板块ID获取板块
+     */
+    Forum getForumById(int forumId);
+
+    /**
+     * 根据回复ID获取回复
+     */
+    Reply getReplyById(int replyId);
+
+    /**
+     * 批量删除板块
+     */
+    int batchDeleteForums(int[] forumIds);
 }

@@ -5,6 +5,9 @@ import main.forumsystem.src.service.ModeratorService;
 import main.forumsystem.src.entity.*;
 import java.util.List;
 import java.util.Scanner;
+import main.forumsystem.src.service.impl.UserServiceImpl;
+import main.forumsystem.src.service.UserService;
+
 
 /**
  * 版主功能控制器
@@ -167,6 +170,8 @@ public class ModeratorMenuController {
         System.out.println("\n=== " + forum.getForumName() + " 主题列表 ===");
         
         List<Topic> topics = forumService.getTopicsByForum(forum.getForumId(), 1, 20);
+        UserService userService = new UserServiceImpl();
+
         if (topics.isEmpty()) {
             System.out.println("该板块暂无主题！");
             return;
@@ -183,9 +188,9 @@ public class ModeratorMenuController {
             if (status.isEmpty()) status = "正常";
             
             System.out.printf("%-5d %-30s %-15s %-10d %-10d %-10s\n",
-                    topic.getTopicId(),
+                    userService.getUserName(topic.getUserId()),
                     topic.getTitle().length() > 25 ? topic.getTitle().substring(0, 25) + "..." : topic.getTitle(),
-                    "用户" + topic.getUserId(),
+                    userService.getUserName(topic.getUserId()),
                     topic.getReplyCount(),
                     topic.getViewCount(),
                     status);
@@ -344,6 +349,8 @@ public class ModeratorMenuController {
         
         // 获取待审核主题
         List<Topic> pendingTopics = moderatorService.getPendingTopics(forum.getForumId(), currentUser.getUserId());
+
+        UserService userService = new UserServiceImpl();
         
         if (pendingTopics.isEmpty()) {
             System.out.println("没有待审核的主题！");
@@ -356,9 +363,9 @@ public class ModeratorMenuController {
         
         for (Topic topic : pendingTopics) {
             System.out.printf("%-5d %-30s %-15s\n",
-                    topic.getTopicId(),
+                    userService.getUserName(topic.getUserId()),
                     topic.getTitle().length() > 25 ? topic.getTitle().substring(0, 25) + "..." : topic.getTitle(),
-                    "用户" + topic.getUserId());
+                    userService.getUserName(topic.getUserId()));
         }
         
         System.out.print("请输入要审核的主题ID: ");
@@ -665,6 +672,8 @@ public class ModeratorMenuController {
         System.out.println("\n=== 所有待审核主题 ===");
         
         List<Forum> myForums = moderatorService.getForumsByModerator(currentUser.getUserId());
+
+        UserService userService = new UserServiceImpl();
         boolean hasPendingTopics = false;
         
         for (Forum forum : myForums) {
@@ -679,7 +688,7 @@ public class ModeratorMenuController {
                     System.out.printf("%-5d %-30s %-15s\n",
                             topic.getTopicId(),
                             topic.getTitle().length() > 25 ? topic.getTitle().substring(0, 25) + "..." : topic.getTitle(),
-                            "用户" + topic.getUserId());
+                            userService.getUserName(topic.getUserId()));
                 }
             }
         }

@@ -7,6 +7,8 @@ import main.forumsystem.src.service.UserBlockService;
 import main.forumsystem.src.service.impl.UserBlockServiceImpl;
 import java.util.List;
 import java.util.Scanner;
+import main.forumsystem.src.service.UserService;
+import main.forumsystem.src.service.impl.UserServiceImpl;
 
 /**
  * 论坛功能控制器
@@ -280,6 +282,8 @@ public class ForumMenuController {
      */
     public void viewTopics(User currentUser, int forumId) {
         System.out.println("\n=== 主题列表 ===");
+
+        UserService userService = new UserServiceImpl();
         
         // 获取主题列表
         List<Topic> topics = forumService.getTopicsByForum(forumId, 1, 20);
@@ -293,14 +297,14 @@ public class ForumMenuController {
         }
         
         System.out.printf("%-5s %-30s %-15s %-10s %-10s\n", 
-                "ID", "标题", "作者", "回复数", "浏览数");
+                "名称", "标题", "作者", "回复数", "浏览数");
         System.out.println("------------------------------------------------------------------------");
         
         for (Topic topic : filteredTopics) {
             System.out.printf("%-5d %-30s %-15s %-10d %-10d\n",
                     topic.getTopicId(),
                     topic.getTitle().length() > 25 ? topic.getTitle().substring(0, 25) + "..." : topic.getTitle(),
-                    "用户" + topic.getUserId(),
+                    userService.getUserName(topic.getUserId()),
                     topic.getReplyCount(),
                     topic.getViewCount());
         }
@@ -434,7 +438,8 @@ public class ForumMenuController {
     
     private String getUserName(int userId) {
         // 这里应该调用userService获取用户信息，简化处理
-        return "用户" + userId;
+        UserService userService = new UserServiceImpl();
+        return userService.getUserName(userId);
     }
     
     private String getModeratorName(int moderatorId) {

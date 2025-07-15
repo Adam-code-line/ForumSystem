@@ -223,4 +223,10 @@ public interface ReplyDao {
      * @return 热门回复列表
      */
     List<Reply> getHotReplies(int topicId, int limit);
+
+    /**
+     * 获取所有回复
+     * @return 所有回复列表
+     */
+    List<Reply> getAllReplies();
 }

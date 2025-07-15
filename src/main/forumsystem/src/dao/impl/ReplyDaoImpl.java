@@ -585,4 +585,14 @@ public class ReplyDaoImpl extends BaseDao implements ReplyDao {
 
         return reply;
     }
+
+    @Override
+    public List<Reply> getAllReplies() {
+        String sql = """
+            SELECT * FROM replies 
+            WHERE status != 'deleted' 
+            ORDER BY create_time DESC
+            """;
+        return getMultipleReplies(sql);
+    }
 }
